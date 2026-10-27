@@ -1,6 +1,7 @@
 """Product assistant agent: one Claude model, two tools, manual tool loop."""
 
 import os
+import re
 import sys
 import time
 import uuid
@@ -25,6 +26,8 @@ SYSTEM_PROMPT = """You are a product assistant for an online shop in Rwanda.
 
 Rules:
 - Answer only using information returned by your tools (search_product, check_price).
+- When the customer names a product (e.g. "the monitor"), call search_product
+  with that name. Don't ask them for a product ID.
 - Never guess, estimate or invent a product, price or detail. If a tool says a
   product was not found, tell the customer clearly that it does not exist in
   the catalogue.
@@ -43,6 +46,21 @@ class AgentResult:
     tool_outputs: list[str] = field(default_factory=list)  # used as retrieval_context
     tool_failures: int = 0
     error: str | None = None
+    blocked: bool = False  # answer replaced by the price guardrail
+
+
+PRICE_RE = re.compile(r"(\d[\d,]*)\s*(?:RWF|FRW|Rwandan francs?)", re.IGNORECASE)
+BLOCKED_ANSWER = ("Sorry, I can only share prices that come directly from our catalogue, "
+                  "and I couldn't verify one for this request.")
+
+
+def extract_prices(text: str) -> set[int]:
+    return {int(a.replace(",", "")) for a in PRICE_RE.findall(text)}
+
+
+def unsupported_prices(answer: str, tool_outputs: list[str]) -> set[int]:
+    """Prices stated in the answer that no tool output contains."""
+    return extract_prices(answer) - extract_prices(" ".join(tool_outputs))
 
 
 _client: anthropic.Anthropic | None = None
@@ -76,13 +94,24 @@ def run_agent(user_input: str) -> AgentResult:
 
             if response.stop_reason != "tool_use":
                 answer = "".join(b.text for b in response.content if b.type == "text").strip()
+
+                # Output guardrail: never trust the model with prices. Every price in
+                # the answer must come from a tool result, otherwise block the answer.
+                blocked = False
+                if bad := unsupported_prices(answer, tool_outputs):
+                    logger.warning("[%s] Security: blocked answer with unsupported price(s) %s",
+                                   request_id, sorted(bad))
+                    answer, blocked = BLOCKED_ANSWER, True
+
                 latency = time.perf_counter() - start
                 logger.info(
                     "[%s] Request completed | status=success | latency=%.2fs | "
-                    "tool_calls=%d | tool_failures=%d | stop_reason=%s",
-                    request_id, latency, len(tool_outputs), tool_failures, response.stop_reason,
+                    "tool_calls=%d | tool_failures=%d | blocked=%s | stop_reason=%s",
+                    request_id, latency, len(tool_outputs), tool_failures, blocked,
+                    response.stop_reason,
                 )
-                return AgentResult(answer, True, latency, tool_outputs, tool_failures)
+                return AgentResult(answer, True, latency, tool_outputs, tool_failures,
+                                   blocked=blocked)
 
             messages.append({"role": "assistant", "content": response.content})
             tool_results = []

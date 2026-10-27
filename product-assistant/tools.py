@@ -10,6 +10,7 @@ logger = get_logger("tools")
 
 PRODUCTS_FILE = Path(__file__).resolve().parent / "products.json"
 CURRENCY = "RWF"
+PRODUCT_ID_RE = re.compile(r"P\d{3}")
 STOPWORDS = {"a", "an", "the", "find", "show", "me", "i", "want", "need", "looking",
              "for", "do", "you", "have", "any", "some", "please", "is", "there"}
 
@@ -42,7 +43,7 @@ def search_product(query: str) -> str:
     matches = [p for hits, p in scored if hits == best]
     if not matches:
         logger.info("search_product: no match for %r", query)
-        return f"No products found matching '{query}'."
+        return "No products found matching that search."
 
     results = [
         {
@@ -61,6 +62,12 @@ def check_price(product_id: str) -> str:
     """Return the price for an exact product ID from the catalogue."""
     logger.info("Tool call: check_price(product_id=%r)", product_id)
     product_id = (product_id or "").strip().upper()
+
+    # Reject anything that isn't a well-formed ID, and never echo it back:
+    # echoed text could smuggle a fake price into the tool output.
+    if not PRODUCT_ID_RE.fullmatch(product_id):
+        logger.warning("check_price: rejected invalid product ID %r", product_id)
+        return "Invalid product ID: product not found. IDs look like 'P002'."
 
     for p in load_products():
         if p["id"] == product_id:
