@@ -1,10 +1,12 @@
 """Central logging setup: writes to logs/app.log (and the console)."""
 
 import logging
+import os
 from pathlib import Path
 
 LOG_DIR = Path(__file__).resolve().parent / "logs"
-LOG_FILE = LOG_DIR / "app.log"
+# Tests set APP_LOG_FILE so they don't pollute the real app.log metrics.
+LOG_FILE = Path(os.getenv("APP_LOG_FILE", LOG_DIR / "app.log"))
 LOG_FORMAT = "%(asctime)s | %(levelname)-7s | %(name)s | %(message)s"
 
 
@@ -14,7 +16,7 @@ def setup_logging(level: int = logging.INFO) -> logging.Logger:
     if logger.handlers:  # already configured (e.g. imported twice)
         return logger
 
-    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
     formatter = logging.Formatter(LOG_FORMAT)
 
     file_handler = logging.FileHandler(LOG_FILE, encoding="utf-8")
