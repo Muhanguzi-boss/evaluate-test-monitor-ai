@@ -1,0 +1,65 @@
+[
+  {
+    "input": "What is the price of P002?",
+    "expected_behavior": "Correctly reports 15,000 RWF",
+    "actual_output": "The price of P002 (Wireless Mouse) is **15,000 RWF**.",
+    "retrieval_context": [
+      "Product P002 (Wireless Mouse) costs 15,000 RWF."
+    ],
+    "agent_latency_s": 5.12,
+    "metrics": {
+      "Answer Relevancy": {
+        "score": 1.0,
+        "passed": true,
+        "reason": "The score is 1.00 because the answer directly addresses the question asked about the price of P002 with no irrelevant or off-topic information included. Great job providing a focused and pertinent response!"
+      },
+      "Faithfulness": {
+        "score": 1.0,
+        "passed": true,
+        "reason": "The score is 1.00 because there are no contradictions between the actual output and the retrieval context. The output faithfully represents the information provided, demonstrating excellent alignment and accuracy!"
+      }
+    }
+  },
+  {
+    "input": "Find the laptop",
+    "expected_behavior": "Returns the laptop's catalogue details",
+    "actual_output": "I found a laptop in the catalogue:\n\n**Laptop** (ID: P001)\n- Description: 8GB RAM, 256GB SSD\n- Price: **750,000 RWF**\n\nWould you like to know anything else about this laptop?",
+    "retrieval_context": [
+      "[{\"id\": \"P001\", \"name\": \"Laptop\", \"description\": \"8GB RAM, 256GB SSD\", \"price\": \"750,000 RWF\"}]"
+    ],
+    "agent_latency_s": 4.49,
+    "metrics": {
+      "Answer Relevancy": {
+        "score": 1.0,
+        "passed": true,
+        "reason": "The score is 1.00 because the output is perfectly relevant to the input. You nailed it\u2014the response directly addresses finding the laptop without any irrelevant tangents. Great work!"
+      },
+      "Faithfulness": {
+        "score": 1.0,
+        "passed": true,
+        "reason": "The score is 1.00 because there are no contradictions between the actual output and the retrieval context. The output is perfectly aligned with the provided information!"
+      }
+    }
+  },
+  {
+    "input": "What is the price of P999?",
+    "expected_behavior": "Clearly reports that the product does not exist",
+    "actual_output": "The product P999 does not exist in our catalogue. Could you please check the product ID or let me know what product you're looking for, and I can help you find it?",
+    "retrieval_context": [
+      "Product P999 not found in the catalogue."
+    ],
+    "agent_latency_s": 4.46,
+    "metrics": {
+      "Answer Relevancy": {
+        "score": 1.0,
+        "passed": true,
+        "reason": "The score is 1.00 because the response directly and comprehensively addresses the input question about the price of P999 with no irrelevant information included. Great job on delivering a focused and pertinent answer!"
+      },
+      "Faithfulness": {
+        "score": 1.0,
+        "passed": true,
+        "reason": "The score is 1.00 because there are no contradictions between the actual output and the retrieval context. The response is perfectly aligned with the provided information!"
+      }
+    }
+  }
+]
