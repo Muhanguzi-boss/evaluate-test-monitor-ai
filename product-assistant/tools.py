@@ -1,5 +1,3 @@
-"""The agent's two tools: search_product and check_price."""
-
 import json
 import re
 from pathlib import Path
@@ -25,14 +23,12 @@ def format_price(amount: int) -> str:
 
 
 def search_product(query: str) -> str:
-    """Search the catalogue by ID, name or description (case-insensitive)."""
     logger.info("Tool call: search_product(query=%r)", query)
     query = (query or "").strip().lower()
     keywords = [w for w in re.findall(r"[a-z0-9]+", query) if w not in STOPWORDS]
     if not keywords:
         return "Error: search query is empty."
 
-    # Score each product by how many keywords it contains; keep the best.
     scored = []
     for p in load_products():
         text = f"{p['id']} {p['name']} {p['description']}".lower()
@@ -59,12 +55,9 @@ def search_product(query: str) -> str:
 
 
 def check_price(product_id: str) -> str:
-    """Return the price for an exact product ID from the catalogue."""
     logger.info("Tool call: check_price(product_id=%r)", product_id)
     product_id = (product_id or "").strip().upper()
 
-    # Reject anything that isn't a well-formed ID, and never echo it back:
-    # echoed text could smuggle a fake price into the tool output.
     if not PRODUCT_ID_RE.fullmatch(product_id):
         logger.warning("check_price: rejected invalid product ID %r", product_id)
         return "Invalid product ID: product not found. IDs look like 'P002'."
@@ -120,7 +113,6 @@ TOOL_SCHEMAS = [
 
 
 def execute_tool(name: str, tool_input: dict) -> tuple[str, bool]:
-    """Run a tool safely. Returns (result_text, is_error); never raises."""
     func = TOOL_FUNCTIONS.get(name)
     if func is None:
         logger.error("Tool failure: unknown tool %r", name)

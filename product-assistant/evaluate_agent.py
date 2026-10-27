@@ -1,9 +1,3 @@
-"""Evaluate the real agent with DeepEval (Answer Relevancy + Faithfulness).
-
-Run: python evaluate_agent.py
-Results are printed and saved to eval_results.json.
-"""
-
 import json
 import os
 from pathlib import Path
@@ -12,12 +6,11 @@ from deepeval.metrics import AnswerRelevancyMetric, FaithfulnessMetric
 from deepeval.models import AnthropicModel
 from deepeval.test_case import LLMTestCase
 
-from agent import run_agent  # also loads .env
+from agent import run_agent
 
 THRESHOLD = 0.7
 RESULTS_FILE = Path(__file__).resolve().parent / "eval_results.json"
 
-# Claude is the judge (DeepEval defaults to OpenAI otherwise).
 judge = AnthropicModel(model=os.getenv("EVAL_MODEL", "claude-haiku-4-5"))
 
 EVAL_CASES = [
@@ -28,12 +21,11 @@ EVAL_CASES = [
 
 
 def evaluate_case(case: dict) -> dict:
-    result = run_agent(case["input"])  # real agent call, no invented responses
+    result = run_agent(case["input"])
 
     test_case = LLMTestCase(
         input=case["input"],
         actual_output=result.answer,
-        # Faithfulness checks the answer against what the tools returned.
         retrieval_context=result.tool_outputs or ["No product information was returned."],
     )
 

@@ -1,8 +1,3 @@
-"""Send a batch of real requests through the agent so they are logged to logs/app.log.
-
-Run: python run_requests.py
-"""
-
 from agent import run_agent
 
 REQUESTS = [

@@ -1,8 +1,3 @@
-"""Read logs/app.log and report request, latency and tool metrics.
-
-Run: python log_metrics.py [path/to/app.log]
-"""
-
 import re
 import sys
 from pathlib import Path
@@ -14,7 +9,6 @@ DONE_RE = re.compile(
     r"\[(\w+)\] Request completed \| status=(\w+) \| latency=([\d.]+)s"
     r"(?: \| tool_calls=(\d+) \| tool_failures=(\d+))?"
 )
-# Agent-level tool lines, so only tool calls made inside a request are counted.
 TOOL_RE = re.compile(r"\[(\w+)\] Tool (\w+) -> is_error=(\w+)")
 BLOCKED_RE = re.compile(r"Security: blocked answer")
 

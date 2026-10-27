@@ -1,5 +1,3 @@
-"""Product assistant agent: one Claude model, two tools, manual tool loop."""
-
 import os
 import re
 import sys
@@ -20,7 +18,7 @@ logger = get_logger("agent")
 
 MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5")
 MAX_TOKENS = 1024
-MAX_TURNS = 5  # safety cap on tool-call round trips
+MAX_TURNS = 5
 
 SYSTEM_PROMPT = """You are a product assistant for an online shop in Rwanda.
 
@@ -43,10 +41,10 @@ class AgentResult:
     answer: str
     success: bool
     latency_s: float
-    tool_outputs: list[str] = field(default_factory=list)  # used as retrieval_context
+    tool_outputs: list[str] = field(default_factory=list)
     tool_failures: int = 0
     error: str | None = None
-    blocked: bool = False  # answer replaced by the price guardrail
+    blocked: bool = False
 
 
 PRICE_RE = re.compile(r"(\d[\d,]*)\s*(?:RWF|FRW|Rwandan francs?)", re.IGNORECASE)
@@ -59,7 +57,6 @@ def extract_prices(text: str) -> set[int]:
 
 
 def unsupported_prices(answer: str, tool_outputs: list[str]) -> set[int]:
-    """Prices stated in the answer that no tool output contains."""
     return extract_prices(answer) - extract_prices(" ".join(tool_outputs))
 
 
@@ -69,7 +66,7 @@ _client: anthropic.Anthropic | None = None
 def get_client() -> anthropic.Anthropic:
     global _client
     if _client is None:
-        _client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from the env
+        _client = anthropic.Anthropic()
     return _client
 
 
@@ -95,8 +92,6 @@ def run_agent(user_input: str) -> AgentResult:
             if response.stop_reason != "tool_use":
                 answer = "".join(b.text for b in response.content if b.type == "text").strip()
 
-                # Output guardrail: never trust the model with prices. Every price in
-                # the answer must come from a tool result, otherwise block the answer.
                 blocked = False
                 if bad := unsupported_prices(answer, tool_outputs):
                     logger.warning("[%s] Security: blocked answer with unsupported price(s) %s",
