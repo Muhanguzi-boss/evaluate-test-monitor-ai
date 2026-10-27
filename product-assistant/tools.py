@@ -1,6 +1,7 @@
 """The agent's two tools: search_product and check_price."""
 
 import json
+import re
 from pathlib import Path
 
 from logging_config import get_logger
@@ -9,6 +10,8 @@ logger = get_logger("tools")
 
 PRODUCTS_FILE = Path(__file__).resolve().parent / "products.json"
 CURRENCY = "RWF"
+STOPWORDS = {"a", "an", "the", "find", "show", "me", "i", "want", "need", "looking",
+             "for", "do", "you", "have", "any", "some", "please", "is", "there"}
 
 
 def load_products() -> list[dict]:
@@ -24,15 +27,19 @@ def search_product(query: str) -> str:
     """Search the catalogue by ID, name or description (case-insensitive)."""
     logger.info("Tool call: search_product(query=%r)", query)
     query = (query or "").strip().lower()
-    if not query:
+    keywords = [w for w in re.findall(r"[a-z0-9]+", query) if w not in STOPWORDS]
+    if not keywords:
         return "Error: search query is empty."
 
-    matches = [
-        p for p in load_products()
-        if query in p["id"].lower()
-        or query in p["name"].lower()
-        or query in p["description"].lower()
-    ]
+    # Score each product by how many keywords it contains; keep the best.
+    scored = []
+    for p in load_products():
+        text = f"{p['id']} {p['name']} {p['description']}".lower()
+        hits = sum(1 for w in keywords if w in text)
+        if hits:
+            scored.append((hits, p))
+    best = max((hits for hits, _ in scored), default=0)
+    matches = [p for hits, p in scored if hits == best]
     if not matches:
         logger.info("search_product: no match for %r", query)
         return f"No products found matching '{query}'."
